@@ -1,0 +1,65 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+.eggs/
+*.log
+*.tmp
+*.swp
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Jupyter runtime
+~$*.ipynb
+.env
+.env.*
+*.env
+
+# Python virtualenvs
+.venv/
+venv/
+ENV/
+env/
+
+# VSCode
+.vscode/
+.history/
+
+# PyCharm
+.idea/
+
+# Kafka Logs (if any local mount)
+kafka-logs/
+schema-registry-logs/
+
+# Docker
+*.tar
+*.pid
+*.sock
+*.log
+docker-compose.override.yml
+
+# Databricks / Spark local exports (if any)
+*.dbc
+*.dbc-backup
+.dbfs/
+.sparkStaging/
+.metastore_db/
+
+# Datasets / outputs (if staged locally)
+data/
+output/
+checkpoints/
+tmp/
+.parquet/
+.delta/
+
+# MacOS
+.DS_Store
+
+# System
+Thumbs.db
