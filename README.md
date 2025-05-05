@@ -1,4 +1,4 @@
-# 🚀 process-1B-records-kafka-spark
+# process-1B-records-kafka-spark
 
 ### Ultra High-Throughput Streaming Pipeline Using Kafka + Schema Registry + Spark + Delta Lake
 
@@ -6,7 +6,7 @@ This project demonstrates how to build a production-grade streaming data pipelin
 
 ---
 
-## ⚙️ Stack Summary
+## Stack Summary
 
 | Layer              | Tool/Service                          |
 |--------------------|----------------------------------------|
@@ -20,7 +20,7 @@ This project demonstrates how to build a production-grade streaming data pipelin
 
 ---
 
-## 💡 Project Goals
+## Project Goals
 
 - Simulate **high-velocity data streams** in Avro format.
 - Validate messages against **Avro schemas** with Schema Registry.
@@ -34,7 +34,6 @@ This project demonstrates how to build a production-grade streaming data pipelin
 
 ## 🧱 Architecture Overview
 <pre>
-```text
 +--------------------+        +--------------------+         +--------------------+
 | High-throughput    | -----> |   Kafka Topic      | ----->  |  Spark on Databricks|
 | Python Producer    |  Avro  | (100+ partitions)  |         |  (Structured Stream)|
@@ -49,14 +48,12 @@ This project demonstrates how to build a production-grade streaming data pipelin
                                                   +------------------------+
                                                   |  Power BI / Tableau    |
                                                   +------------------------+
-```
 </pre>
 ---
 
 ## 📦 Project Structure
 
 <pre>
-```
 process-1B-records-kafka-spark/
 │
 ├── docker-compose.yml         # KRaft Kafka + Schema Registry
@@ -72,7 +69,6 @@ process-1B-records-kafka-spark/
 ├── dashboards/                # BI dashboard files (Power BI / Tableau)
 │
 └── README.md
-```
 </pre>
 
 
@@ -91,6 +87,6 @@ process-1B-records-kafka-spark/
 
 ---
 
-## 📜 License
+## License
 
 MIT © [Paritosh Ghimire](https://github.com/psgpyc)
