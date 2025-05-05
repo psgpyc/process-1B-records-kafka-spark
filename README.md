@@ -33,8 +33,8 @@ This project demonstrates how to build a production-grade streaming data pipelin
 ---
 
 ## 🧱 Architecture Overview
-
-\`\`\`
+<pre>
+```text
 +--------------------+        +--------------------+         +--------------------+
 | High-throughput    | -----> |   Kafka Topic      | ----->  |  Spark on Databricks|
 | Python Producer    |  Avro  | (100+ partitions)  |         |  (Structured Stream)|
@@ -49,13 +49,14 @@ This project demonstrates how to build a production-grade streaming data pipelin
                                                   +------------------------+
                                                   |  Power BI / Tableau    |
                                                   +------------------------+
-\`\`\`
-
+```
+</pre>
 ---
 
 ## 📦 Project Structure
 
-\`\`\`
+<pre>
+```
 process-1B-records-kafka-spark/
 │
 ├── docker-compose.yml         # KRaft Kafka + Schema Registry
@@ -71,63 +72,22 @@ process-1B-records-kafka-spark/
 ├── dashboards/                # BI dashboard files (Power BI / Tableau)
 │
 └── README.md
-\`\`\`
+```
+</pre>
 
----
 
-## 🚀 Getting Started
-
-### 1. 🐳 Run Kafka and Schema Registry
-
-\`\`\`bash
-docker-compose up -d
-\`\`\`
-
-Kafka will be available at \`localhost:9092\`, and Schema Registry at \`localhost:8081\`.
-
----
-
-### 2. 🧪 Produce Data to Kafka
-
-\`\`\`bash
-cd producer
-python producer.py
-\`\`\`
-
-This script generates hundreds of thousands of Avro-encoded events per second and sends them to a Kafka topic (\`avro-topic\`), with schema auto-registered in Schema Registry.
-
----
-
-### 3. 🔥 Process with Spark (on Databricks)
-
-- Import the job from \`databricks_jobs/\` into your Databricks workspace.
-- Set up Kafka connection (public broker endpoint or port-forwarding).
-- Start streaming the Kafka topic and write output to Delta Lake.
-
----
-
-### 4. 📊 Analyze
-
-- Connect your dashboard tool (e.g., Power BI, Tableau) to Delta tables.
-- Build real-time KPIs like:
-  - Processed events per second
-  - Volume per region/category/device
-  - Streaming lag / errors
-
----
-
-## 🔍 Status
+## Status
 
 | Component                | Status     |
 |--------------------------|------------|
-| Kafka (KRaft)            | ✅ Running |
-| Schema Registry          | ✅ Running |
-| Avro Producer            | 🔄 In Progress |
-| Spark Consumer           | 🔜 Next |
-| Delta Lake Integration   | 🔜 Next |
-| BI Dashboard             | 🔜 Planned |
-| Monitoring Stack         | 🔜 Planned |
-| FastAPI Admin Panel      | ❌ Future |
+| Kafka (KRaft)            | Running |
+| Schema Registry          | Running |
+| Avro Producer            | In Progress |
+| Spark Consumer           | Next |
+| Delta Lake Integration   | Next |
+| BI Dashboard             | Planned |
+| Monitoring Stack         | Planned |
+| FastAPI Admin Panel      | Future |
 
 ---
 
