@@ -5,6 +5,7 @@ import random
 
 fake = Faker()
 
+
 def generate_user_event():
     return {
         "timestamp": int(time.time() * 1000),
@@ -17,4 +18,4 @@ def generate_user_event():
     }
 
 
-pprint(generate_user_event())
+
