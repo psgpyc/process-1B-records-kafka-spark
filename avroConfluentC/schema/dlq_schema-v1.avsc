@@ -1,0 +1,13 @@
+{
+    "type": "record",
+    "name": "userEventsDLQ",
+    "namespace": "com.eltify.dql",
+    "fields": [
+        {"name": "error", "type": "string"},
+        {"name": "raw_payload", "type": "string"},
+        {"name": "topic", "type": "string"},
+        {"name": "partition", "type": "int"},
+        {"name": "offset", "type": "long"},
+        {"name": "timestamp", "type": "long"}
+  ] 
+}

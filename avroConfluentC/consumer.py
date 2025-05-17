@@ -2,16 +2,21 @@ import os
 import logging
 from dotenv import load_dotenv
 from helpers import get_base_config, get_schema_str
-from confluent_kafka import Consumer
+from confluent_kafka import Consumer, Producer
 
 from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.avro import AvroDeserializer
 from confluent_kafka.serialization import SerializationContext, MessageField
 
+from dlq_producer import produce_to_dlq_topic
+
 BASE_CONFIG = get_base_config()
 load_dotenv()
 
 def main():
+
+    producer = Producer(BASE_CONFIG)
+
     CONSUMER_CONF = {
         "group.id":  "base-group",
         "auto.offset.reset": "earliest",
@@ -23,6 +28,7 @@ def main():
     }
 
     BASE_CONFIG.update(CONSUMER_CONF)
+
     SCHEMA_REGISTRY_CONF = {
         "url": os.environ.get("SCHEMA_REGISTRY_URL"),
         "basic.auth.user.info": os.environ.get("SCHEMA_REGISTRY_BASIC_AUTH")
@@ -30,7 +36,6 @@ def main():
 
     consumer = Consumer(BASE_CONFIG)
     consumer.subscribe(['base-topic'])
-
     schema_registry_client = SchemaRegistryClient(SCHEMA_REGISTRY_CONF)
 
     # using schema evolution
@@ -42,11 +47,14 @@ def main():
             msg = consumer.poll(1.0)
             if msg is None:
                 continue
-            if msg.error():
-                logging.error(f"An error occured: {msg.error()}")
-            else:
+            
+            try:
                 msg = avro_dserializer(msg.value(), SerializationContext(msg.topic(), MessageField.VALUE))
                 logging.info(msg)
+            except Exception as e:
+                logging.error(f"error processing message: {e}")
+                produce_to_dlq_topic(msg=msg, schema_registry_client=schema_registry_client, error=e, producer=producer)
+
     except Exception as e:
         logging.error(f"An error has occured: {e}")
         
