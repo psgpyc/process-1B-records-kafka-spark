@@ -1,0 +1,15 @@
+{
+    "type": "record",
+    "name": "UserEvent",
+    "namespace": "com.eltify.analytics",
+    "fields": [
+        {"name": "timestamp", "type": {"type": "long", "logicalType":"timestamp" }},
+        {"name": "user_id", "type": "long"},
+        {"name": "session_id", "type": "string"},
+        {"name": "event_type", "type": "string"},
+        {"name": "page", "type": "string"},
+        {"name": "referrer", "type": "string"},
+        {"name": "user_agent", "type": "string"},
+        {"name": "user_process", "type": ["null", "string"], "default":"null"}
+    ]
+}

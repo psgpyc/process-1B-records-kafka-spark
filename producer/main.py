@@ -55,32 +55,7 @@ def delivery_report(err, msg):
         return
     logging.info(f'User record { msg.key()} successfully produced to {msg.topic()} [{msg.partition()}] at offset {msg.offset()}')
 
-def initialise_serializer():
-    
-     # create a client to interact with confluents schema registry
-    schema_registry_client = SchemaRegistryClient(SCHEMA_REGISTRY_CONF)  
-
-    # Retrieve the Avro schema definition from a file
-    schema_str = get_schema(schema_path=schema_path)
-
-    
-
-    # Initialize the Avro serializer with the schema and schema registry client
-    avro_serializer = AvroSerializer(
-        schema_registry_client=schema_registry_client,
-        schema_str=schema_str) 
-
-    # Simple serializer to convert the session_id key to a byte format
-    string_serializer = StringSerializer()
-    
-    # Initialize the Kafka producer with the provided configuration
-   
-
-    return avro_serializer, string_serializer
-
-
-
-def main(each_process):
+def main():
     """
         Main function to produce a user event message to the Kafka topic.
         It initializes the producer, serializes the message using Avro, and sends it to Kafka.
@@ -103,7 +78,6 @@ def main(each_process):
     producer = Producer(PRODUCER_CONF)
     
     # Initialize the Kafka producer with the provided configuration
-    start = time.time()
     try:
         logging.info(f"Producing the record to topic[{TOPIC_NAME}]. ^C to exit")
         # Generate a sample user event to be sent to Kafka
@@ -119,13 +93,11 @@ def main(each_process):
             
             producer.poll(0)
 
-        producer.flush()
-    
     except Exception as e:
         logging.error(f"An error has occured inside producer client: {e}")
 
-    end = time.time()
-    print(f"time taken by process:{each_process} {end-start}")
+    finally:
+        producer.flush()
 
     
 if __name__ == '__main__':
@@ -138,14 +110,12 @@ if __name__ == '__main__':
 
     processes = []
 
-
     for each_process in range(NUM_PROCESS):
-        p = multiprocessing.Process(target=main, args={each_process})
+        p = multiprocessing.Process(target=main)
         processes.append(p)
         p.start()
 
     for p in processes:
         p.join()
 
-    print("completed")
 
