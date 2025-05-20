@@ -65,4 +65,5 @@ tmp/
 .DS_Store
 
 # System
-Thumbs.db
+Thumbs.dbaws_infra_terraform/terraform.tfstate*
+aws_infra_terraform/.terraform/
