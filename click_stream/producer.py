@@ -1,6 +1,8 @@
-"""Producer script for sending click stream records to Kafka with Avro serialization and schema registry integration.
-Handles serialization errors by sending problematic records to a Dead Letter Queue (DLQ).
-Supports multiprocessing and graceful shutdown with metrics reporting."""
+"""
+    Producer script for sending click stream records to Kafka with Avro serialization and schema registry integration.
+    Handles serialization errors by sending problematic records to a Dead Letter Queue (DLQ).
+    Supports multiprocessing and graceful shutdown with metrics reporting.
+"""
 
 import os
 import sys
@@ -17,7 +19,7 @@ from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.avro import AvroSerializer
 from confluent_kafka.serialization import SerializationContext, MessageField, StringSerializer
 
-from helpers import get_base_config, get_schema, get_schema_registry_conf, get_record
+from helpers import get_base_config, get_schema, get_schema_registry_conf, get_record, send_to_dlq
 
 
 def delivery_report(err, msg):
@@ -31,7 +33,7 @@ def delivery_report(err, msg):
     logging.info(f'User record { msg.key()} successfully produced to {msg.topic()} [{msg.partition()}] at offset {msg.offset()}')
 
 
-def send_to_dlq(record, topic, producer):
+def send_to_dlq(record, topic, producer=None):
     """
         Sends the given record to the specified Dead Letter Queue (DLQ) Kafka topic.
         Used to handle records that fail serialization or production.
@@ -45,7 +47,6 @@ def send_to_dlq(record, topic, producer):
         value = json.dumps(record).encode('utf-8')
         producer.produce(
             topic=topic,
-            key=str(record.get("session_id")),
             value=value
         )
         producer.flush()
@@ -64,7 +65,9 @@ def main():
         Uses multiprocessing-safe counter and lock to track produced messages.
     """
     topic = os.environ.get("TOPIC_NAME")
+
     PRODUCER_CONFIG = {
+
           **get_base_config(),
 
           "linger.ms": 10,
@@ -145,6 +148,7 @@ def main():
         except Exception as e:
             # handle any other production errors by logging and sending to DLQ
             logging.error(f"An error occured while producing the record..: {e}")
+
             send_to_dlq(record=record, topic=os.environ.get("TOPIC_NAME_DLQ"), producer=producer)
         
 
@@ -188,4 +192,4 @@ if __name__ == "__main__":
 
     # wait for all processes to complete
     for each in processes:
-        each.join()
+        each.join()s

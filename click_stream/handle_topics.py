@@ -1,11 +1,23 @@
-import logging
+"""Module to handle Kafka topic creation and existence checks."""
 
 import os
+import logging
+
 from dotenv import load_dotenv
 from helpers import get_base_config
 from confluent_kafka.admin import AdminClient, NewTopic
 
 def check_topic_exists(client, topic_name=None):
+    """
+    Check if a Kafka topic exists.
+
+    Args:
+        client (AdminClient): Kafka AdminClient instance.
+        topic_name (str, optional): The name of the topic to check.
+
+    Returns:
+        bool: True if the topic exists, False otherwise.
+    """
     if topic_name is not None:
         topic_list = client.list_topics()
         if topic_name in topic_list.topics.keys():
@@ -14,8 +26,16 @@ def check_topic_exists(client, topic_name=None):
             
 
 def main(client, topic_name):
+    """
+    Create a Kafka topic if it does not already exist.
+
+    Args:
+        client (AdminClient): Kafka AdminClient instance.
+        topic_name (str): The name of the topic to create.
+    """
     exists = check_topic_exists(client=client, topic_name=topic_name)
     if not exists:
+        # Define the new topic configuration
         topic = NewTopic(
             topic=topic_name,
             num_partitions=12,
@@ -34,6 +54,7 @@ def main(client, topic_name):
             }
         )
 
+        # Attempt to create the topic using the AdminClient
         futures = client.create_topics([topic])
 
         for topic_name, future in futures.items():
@@ -46,7 +67,7 @@ def main(client, topic_name):
         logging.info(f"Topic: [{topic_name}] already exists")
 
 if __name__ == "__main__":
-
+    # Load environment variables and initialize Kafka AdminClient
     load_dotenv()
 
     TOPIC_NAME = os.environ.get("TOPIC_NAME")
