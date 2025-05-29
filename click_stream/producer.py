@@ -1,13 +1,27 @@
 """
-    Producer script for sending click stream records to Kafka with Avro serialization and schema registry integration.
-    Handles serialization errors by sending problematic records to a Dead Letter Queue (DLQ).
-    Supports multiprocessing and graceful shutdown with metrics reporting.
+Kafka Avro Producer with Multiprocessing and DLQ Support
+
+This module sets up a Kafka producer that generates and sends Avro-encoded clickstream records
+to a Kafka topic. It supports multiple parallel producer processes, Avro serialization using
+Confluent Schema Registry, and Dead Letter Queue (DLQ) handling for serialization and production errors.
+
+Modules:
+- confluent_kafka: Kafka client and schema registry support
+- dotenv: Loads environment variables
+- multiprocessing: For parallel producer processes
+- signal: Handles graceful shutdown
+- logging: For event and error logging
+
+Functions:
+- delivery_report(): Kafka delivery callback
+- send_to_dlq(): Sends failed records to DLQ topic
+- main(): Core logic for producing serialized messages to Kafka
+- exit_gracefully(): Graceful shutdown routine
 """
 
 import os
 import sys
 import time
-import json
 import logging
 import signal
 from dotenv import load_dotenv
@@ -33,36 +47,15 @@ def delivery_report(err, msg):
     logging.info(f'User record { msg.key()} successfully produced to {msg.topic()} [{msg.partition()}] at offset {msg.offset()}')
 
 
-def send_to_dlq(record, topic, producer=None):
-    """
-        Sends the given record to the specified Dead Letter Queue (DLQ) Kafka topic.
-        Used to handle records that fail serialization or production.
-
-        Parameters:
-        - record: The record dictionary to send to DLQ.
-        - topic: The Kafka topic name for the DLQ.
-        - producer: The Kafka producer instance to use for sending.
-    """
-    try:
-        value = json.dumps(record).encode('utf-8')
-        producer.produce(
-            topic=topic,
-            value=value
-        )
-        producer.flush()
-
-        logging.info(f"Sent record to DLQ topic..")
-    except Exception as e:
-        logging.error(f"Failed to send record to DLQ: {e}")
-
-
-
 def main():
     """
-        Main producer loop that fetches records, serializes them using Avro,
-        and produces them to the configured Kafka topic.
-        Handles serialization errors by sending records to DLQ.
-        Uses multiprocessing-safe counter and lock to track produced messages.
+    Main producer function that runs in a loop:
+    - Fetches a new record from the record generator
+    - Serializes it using Avro with Schema Registry
+    - Sends it to the configured Kafka topic
+    - On failure (serialization or production), sends to DLQ
+
+    Utilizes multiprocessing-safe counter and lock to coordinate metrics.
     """
     topic = os.environ.get("TOPIC_NAME")
 
@@ -154,8 +147,13 @@ def main():
 
 def exit_gracefully(counter, start_time):
     """
-        Handles graceful shutdown by calculating total runtime,
-        printing total events produced, and exiting the program.
+    Handles SIGINT for graceful shutdown.
+
+    Prints total runtime and total records produced before exiting.
+
+    Parameters:
+    - counter (multiprocessing.Value): Shared counter for tracking events
+    - start_time (float): Start timestamp of the process
     """
     end_time = time.time()
     total_time = end_time - start_time
@@ -192,4 +190,4 @@ if __name__ == "__main__":
 
     # wait for all processes to complete
     for each in processes:
-        each.join()s
+        each.join()
