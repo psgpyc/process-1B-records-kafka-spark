@@ -34,11 +34,11 @@ def main(lock, counter):
     PRODUCER_CONF = {
         "acks": -1, 
         "linger.ms": 10,
-        "batch.size": 20 * 1024,
+        "batch.size": 512 * 1024,
         "batch.num.messages":  500,
 
-        "queue.buffering.max.messages": 100000,
-        "queue.buffering.max.kbytes": 100 * 1024,
+        "queue.buffering.max.messages": 500000,
+        "queue.buffering.max.kbytes": 500 * 1024,
 
         "retries": 3,
         "enable.idempotence": True,

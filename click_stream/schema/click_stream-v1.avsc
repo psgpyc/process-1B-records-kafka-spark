@@ -1,0 +1,18 @@
+{
+    "type": "record",
+    "name": "ClickStream",
+    "namespace": "com.eltify.analytics",
+    "fields": [
+        {"name":"event_id",  "type":"string" },
+        {"name": "user_id",  "type":"string" },
+        {"name": "session_id", "type": "string"},
+        {"name": "url", "type": "string"},
+        {"name": "event_type", "type": "string"},
+        {"name": "device",  "type": "string"},
+        {"name": "referrer", "type": "string" },
+        {"name": "timestamp", "type": "long", "logicalType":"timestamp"}
+    ]
+}
+
+
+

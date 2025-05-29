@@ -10,6 +10,12 @@ __pycache__/
 *.tmp
 *.swp
 
+producer_legacy
+producer_legacy/
+
+user_events
+user_events/*
+
 # Notebooks
 .ipynb_checkpoints/
 
