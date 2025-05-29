@@ -1,9 +1,16 @@
+"""Producer script for sending click stream records to Kafka with Avro serialization and schema registry integration.
+Handles serialization errors by sending problematic records to a Dead Letter Queue (DLQ).
+Supports multiprocessing and graceful shutdown with metrics reporting."""
+
 import os
-import logging
+import sys
 import time
 import json
-from multiprocessing import Process
+import logging
+import signal
 from dotenv import load_dotenv
+from multiprocessing import Process, Value, Lock
+
 
 from confluent_kafka import Producer
 from confluent_kafka.schema_registry import SchemaRegistryClient
@@ -25,6 +32,15 @@ def delivery_report(err, msg):
 
 
 def send_to_dlq(record, topic, producer):
+    """
+        Sends the given record to the specified Dead Letter Queue (DLQ) Kafka topic.
+        Used to handle records that fail serialization or production.
+
+        Parameters:
+        - record: The record dictionary to send to DLQ.
+        - topic: The Kafka topic name for the DLQ.
+        - producer: The Kafka producer instance to use for sending.
+    """
     try:
         value = json.dumps(record).encode('utf-8')
         producer.produce(
@@ -33,7 +49,7 @@ def send_to_dlq(record, topic, producer):
             value=value
         )
         producer.flush()
-        
+
         logging.info(f"Sent record to DLQ topic..")
     except Exception as e:
         logging.error(f"Failed to send record to DLQ: {e}")
@@ -41,6 +57,12 @@ def send_to_dlq(record, topic, producer):
 
 
 def main():
+    """
+        Main producer loop that fetches records, serializes them using Avro,
+        and produces them to the configured Kafka topic.
+        Handles serialization errors by sending records to DLQ.
+        Uses multiprocessing-safe counter and lock to track produced messages.
+    """
     topic = os.environ.get("TOPIC_NAME")
     PRODUCER_CONFIG = {
           **get_base_config(),
@@ -61,20 +83,21 @@ def main():
           "compression.type": "snappy"
      }
 
-    # setting string serializer for key
+    # setting string serializer for key (session_id)
     string_serializer = StringSerializer()
 
     # setting up schema registry client
     schema_registry_client = SchemaRegistryClient(get_schema_registry_conf())
 
+    # loading Avro schema for serialization
     schema = get_schema(schema_name="click_stream-v1.avsc")
     if schema is None:
         raise FileNotFoundError(f"Schema does not exist...")
     
-         #  setting up avro serializer
+    # setting up Avro serializer with schema registry client and schema string
     avro_serializer = AvroSerializer(schema_registry_client=schema_registry_client, schema_str=schema)
 
-    # setup producer
+    # setup Kafka producer with config
     producer = Producer(PRODUCER_CONFIG)
 
     while True:       
@@ -85,23 +108,32 @@ def main():
             raise ValueError("Expected a record, but got None from get_record()")
         
         try:
+            # serialize record using Avro serializer
             serialized_value = avro_serializer(record, SerializationContext(topic, MessageField.VALUE))
         except Exception as e:
+            # handle serialization errors by logging and sending to DLQ
             logging.error(f"An error occuered while trying to serialize the record: {e}")  
             logging.info("Sending to DLQ topic")
             send_to_dlq(record=record, topic=os.environ.get("TOPIC_NAME_DLQ"), producer=producer)
             continue
 
         try:
+            # produce serialized record to Kafka topic with string-serialized key
             producer.produce(
                         topic=topic, 
                         key=string_serializer(record["session_id"]),
                         value=serialized_value,
                         on_delivery=delivery_report
                     )    
-            producer.poll(0)   
+            # poll to trigger delivery report callbacks (non-blocking)
+            producer.poll(0) 
+
+            # increment counter safely with lock for multiprocessing
+            with lock:
+                counter.value += 1  
 
         except BufferError:
+            # buffer full, flush and retry producing
             logging.warning("buffer full. flushing.....")
             producer.flush()
             producer.produce(
@@ -111,28 +143,49 @@ def main():
                 on_delivery=delivery_report)
             
         except Exception as e:
+            # handle any other production errors by logging and sending to DLQ
             logging.error(f"An error occured while producing the record..: {e}")
             send_to_dlq(record=record, topic=os.environ.get("TOPIC_NAME_DLQ"), producer=producer)
         
-            
+
+def exit_gracefully(counter, start_time):
+    """
+        Handles graceful shutdown by calculating total runtime,
+        printing total events produced, and exiting the program.
+    """
+    end_time = time.time()
+    total_time = end_time - start_time
+    print(f"Total run time: {total_time:.2f} seconds")
+    print(f"Total events generated: {counter.value}")
+    sys.exit(0)          
 
 
 if __name__ == "__main__":
        
     logging.basicConfig(level="INFO")
     load_dotenv()
-    PROCESS_COUNT = os.environ.get("NUM_PRODUCER_PROCESS")
-    
+
+    # setup for multi process synchronization lock
+    lock = Lock()
+
+    # setup: shared counter to monitor production of records across processes
+    counter = Value('i', 0)
+    start_time = time.time() 
+
+    # handling shutdown (Ctrl + C) gracefully by registering signal handler
+    def signal_handler(sig, frame):
+        exit_gracefully(counter, start_time)
+
+    signal.signal(signal.SIGINT, signal_handler) 
+
     processes =  []
 
-    for each_process in range(int(PROCESS_COUNT)):
+    # spawn multiple producer processes as specified by environment variable
+    for each_process in range(int(os.environ.get("NUM_PRODUCER_PROCESS"))):
         p = Process(target=main)
         processes.append(p)
         p.start()
 
+    # wait for all processes to complete
     for each in processes:
         each.join()
-
-        
-        
-   
